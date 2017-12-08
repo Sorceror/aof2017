@@ -1,2 +1,6 @@
 /target
 /.lein-*
+
+\.idea/
+
+advent-of-code\.iml
