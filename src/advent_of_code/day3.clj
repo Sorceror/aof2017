@@ -43,14 +43,6 @@
 (ns advent-of-code.day3
   (:gen-class))
 
-(use 'clojure.tools.trace)
-(trace-vars advent-of-code.day3/mahnattan-distance)
-(trace-vars advent-of-code.day3/calculate-distance)
-(trace-vars clojure.core/mod)
-(untrace-vars advent-of-code.day3/mahnattan-distance)
-(untrace-vars advent-of-code.day3/calculate-distance)
-(untrace-vars clojure.core/mod)
-
 (defn calculate-distance [i step max]
   (cond
     (= 0 (mod i max))     max
@@ -58,7 +50,7 @@
     (> step (mod i max))  (- max (mod i max))
     :else                 (+ step (mod i step))))
 
-(defn mahnattan-distance [input]
+(defn manhattan-distance [input]
    (loop [target (dec input)
           index 1
           local-index 1
@@ -70,11 +62,13 @@
            (recur target (inc index) 1 (inc step) (+ max 2))
            (recur target (inc index) (inc local-index) step max)))))
 
-(mahnattan-distance 361527)
-; (map #(print % "-" (mahnattan-distance %) " ")
-;   (range 2 30))
+(manhattan-distance 361527)
 
 ; ---- PART TWO ----
-; [-1, 1] [0, 1] [1, 1]
-; [-1, 0] [0, 0] [1, 0]
-; [-1,-1] [0,-1] [1,-1]
+; based on https://oeis.org/A141481
+(def int-seq [1, 1, 2, 4, 5, 10, 11, 23, 25, 26, 54, 57, 59, 122, 133, 142, 147, 304, 330, 351, 362, 747, 806, 880, 931, 957, 1968, 2105, 2275, 2391, 2450, 5022, 5336, 5733, 6155, 6444, 6591, 13486, 14267, 15252, 16295, 17008, 17370, 35487, 37402, 39835, 42452, 45220, 47108, 48065, 98098, 103128, 109476, 116247, 123363, 128204, 130654, 266330, 279138, 295229, 312453, 330785, 349975, 363010, 369601, 752688, 787032, 830037, 875851, 924406])
+
+(defn first-bigger [val s]
+  (first (filter #(> % val) s)))
+
+(first-bigger 361527 int-seq)
