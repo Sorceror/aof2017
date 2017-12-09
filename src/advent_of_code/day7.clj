@@ -1,3 +1,7 @@
+;One program at the bottom supports the entire tower. It's holding a large disc, and on the disc are balanced several more sub-towers. At the bottom of these sub-towers, standing on the bottom disc, are other programs, each holding their own disc, and so on. At the very tops of these sub-sub-sub-...-towers, many programs stand simply keeping the disc below them balanced but with no disc of their own.
+;You offer to help, but first you need to understand the structure of these towers. You ask each program to yell out their name, their weight, and (if they're holding a disc) the names of the programs immediately above them balancing on that disc. You write this information down (your puzzle input). Unfortunately, in their panic, they don't do this in an orderly fashion; by the time you're done, you're not sure which program gave which information.
+;Before you're ready to help them, you need to make sure your information is correct. What is the name of the bottom program?
+
 (ns advent-of-code.day7
   (gen-class))
 
@@ -59,52 +63,54 @@
 (defn find-root [input]
   (difference (all-nodes-set input) (all-children-set input)))
 
+(type (parse-nodes (slurp "src/advent_of_code/day7.in")))
 (find-root (parse-nodes input))
 (find-root (parse-nodes (slurp "src/advent_of_code/day7.in")))
 
 ;  ---- PART TWO ----
-; (defn get-node-weigth [node nodes]
-;   (get-in nodes [node :weight]))
-;
-; (defn get-node-children [node nodes]
-;   (get-in nodes [node :children]))
-;
-; (defn all-children-of [node nodes]
-;   (let [children (get-node-children node nodes)]
-;        (if (not-empty children)
-;            (reduce (fn [coll child]
-;                        (union coll #{child} (all-children-of child nodes)))
-;                    #{} children)
-;            #{})))
-;
-;
-; (defn sum-children [node nodes]
-;   (reduce (fn [total child]
-;               (+ total))
-;           0 (all-children-of node nodes)))
-;
-; (defn sums-equal? [sums]
-;   (apply = (map (fn [[node children-sum weight total]] total) sums)))
-;
-; (trace-vars sums-equal?)
-; (trace-special-form loop)
-;
-; (defn find-unbalance [root nodes]
-;   (loop [to-visit [root]]
-;     (println to-visit)
-;     (let [node (first to-visit)
-;           children (get-node-children root nodes)
-;           children-sums (map (fn [node]
-;                                  [node (sum-children node nodes) (get-node-weigth node nodes) (+ (sum-children node nodes) (get-node-weigth node nodes))])
-;                              children)]
-;          (if (sums-equal? children-sums)
-;              (recur (conj (drop 1 to-visit) children))
-;              children-sums))))
-;
-;        ; children-sums))
-;
-; (find-unbalance :tknk (parse-nodes input))
-;
-; (let [nodes (parse-nodes (slurp "src/advent_of_code/day7.in"))
-;       root (find-root nodes)]
-;   (find-unbalance (first root) nodes))
+;For any program holding a disc, each program standing on that disc forms a sub-tower. Each of those sub-towers are supposed to be the same weight, or the disc itself isn't balanced. The weight of a tower is the sum of the weights of the programs in that tower.
+;Given that exactly one program is the wrong weight, what would its weight need to be to balance the entire tower?
+
+(defn get-node-weight [node nodes]
+ (get-in nodes [node :weight]))
+
+(defn get-node-children [node nodes]
+  (get-in nodes [node :children]))
+
+(defn all-children-of [node nodes]
+  (let [children (get-node-children node nodes)]
+       (if (not-empty children)
+           (reduce (fn [coll child]
+                       (union coll #{child} (all-children-of child nodes)))
+                   #{} children)
+           #{})))
+
+(defn sum-children [node nodes]
+  (reduce (fn [total child]
+              (+ total (get-node-weight child nodes)))
+          0 (all-children-of node nodes)))
+
+(defn sums-equal? [sums]
+  (if (empty? sums)
+    true
+    (apply = (map (fn [[_ _ _ total]] total) sums))))
+
+(defn find-unbalance [root nodes]
+  (loop [to-visit [root]
+         unbalanced []]
+    (if (empty? to-visit)
+        unbalanced
+        (let [node (first to-visit)
+              children (get-node-children node nodes)
+              children-sums (map (fn [node]
+                                     [node (sum-children node nodes) (get-node-weight node nodes) (+ (sum-children node nodes) (get-node-weight node nodes))])
+                                 children)]
+             (if (sums-equal? children-sums)
+                 (recur (concat (drop 1 to-visit) children) unbalanced)
+                 (recur (concat (drop 1 to-visit) children) (conj unbalanced children-sums)))))))
+
+(find-unbalance :tknk (parse-nodes input))
+
+(let [nodes (parse-nodes (slurp "src/advent_of_code/day7.in"))
+      root (find-root nodes)]
+  (find-unbalance (first root) nodes))
