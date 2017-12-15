@@ -2,7 +2,7 @@
 ;You offer to help, but first you need to understand the structure of these towers. You ask each program to yell out their name, their weight, and (if they're holding a disc) the names of the programs immediately above them balancing on that disc. You write this information down (your puzzle input). Unfortunately, in their panic, they don't do this in an orderly fashion; by the time you're done, you're not sure which program gave which information.
 ;Before you're ready to help them, you need to make sure your information is correct. What is the name of the bottom program?
 
-(ns advent-of-code.day7
+(ns advent-of-code.day07
   (gen-class))
 
 (def input
@@ -63,9 +63,9 @@
 (defn find-root [input]
   (difference (all-nodes-set input) (all-children-set input)))
 
-(type (parse-nodes (slurp "src/advent_of_code/day7.in")))
+(type (parse-nodes (slurp "src/advent_of_code/day07.in")))
 (find-root (parse-nodes input))
-(find-root (parse-nodes (slurp "src/advent_of_code/day7.in")))
+(find-root (parse-nodes (slurp "src/advent_of_code/day07.in")))
 
 ;  ---- PART TWO ----
 ;For any program holding a disc, each program standing on that disc forms a sub-tower. Each of those sub-towers are supposed to be the same weight, or the disc itself isn't balanced. The weight of a tower is the sum of the weights of the programs in that tower.
@@ -111,6 +111,6 @@
 
 (find-unbalance :tknk (parse-nodes input))
 
-(let [nodes (parse-nodes (slurp "src/advent_of_code/day7.in"))
+(let [nodes (parse-nodes (slurp "src/advent_of_code/day07.in"))
       root (find-root nodes)]
   (find-unbalance (first root) nodes))

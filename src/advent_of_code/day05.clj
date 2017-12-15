@@ -31,7 +31,7 @@
          (recur (inc step) (+ index pos) (assoc input index (fn-offset pos)))))))
 
 (jump input diff-offset1)
-(jump (slurp "src/advent_of_code/day5.in") diff-offset1)
+(jump (slurp "src/advent_of_code/day05.in") diff-offset1)
 
 ; ---- PART TWO ----
 
@@ -41,4 +41,4 @@
       (inc val)))
 
 (jump input diff-offset2)
-(jump (slurp "src/advent_of_code/day5.in") diff-offset2)
+(jump (slurp "src/advent_of_code/day05.in") diff-offset2)

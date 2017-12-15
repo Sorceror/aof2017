@@ -16,7 +16,7 @@
 ;
 ;What is the largest value in any register after completing the instructions in your puzzle input?
 
-(ns advent-of-code.day8
+(ns advent-of-code.day08
   (gen-class))
 
 (use 'advent-of-code.utils)
@@ -87,7 +87,7 @@
     (find-max-register)))
 
 (max-register input)
-(max-register (slurp "src/advent_of_code/day8.in"))
+(max-register (slurp "src/advent_of_code/day08.in"))
 
 ; ---- PART TWO ----
 ; To be safe, the CPU also needs to know the highest value held in any register during this process so that it can decide how much memory to allocate to these operations. For example, in the above instructions, the highest value ever held was 10 (in register c after the third instruction was evaluated).
@@ -111,4 +111,4 @@
        (call-commands2)))
 
 (max-register2 input)
-(max-register2 (slurp "src/advent_of_code/day8.in"))
+(max-register2 (slurp "src/advent_of_code/day08.in"))

@@ -11,7 +11,7 @@
 ; At this point, we've reached a state we've seen before: 2 4 1 2 was already seen. The infinite loop is detected after the fifth block redistribution cycle, and so the answer in this example is 5.
 ; Given the initial block counts in your puzzle input, how many redistribution cycles must be completed before a configuration is produced that has been seen before?
 
-(ns advent-of-code.day6
+(ns advent-of-code.day06
   (gen-class))
 (use 'advent-of-code.utils)
 
@@ -46,7 +46,7 @@
        (recur (inc count) (step coll) (conj confs coll)))))
 
 (find-config input)
-(find-config (slurp "src/advent_of_code/day6.in"))
+(find-config (slurp "src/advent_of_code/day06.in"))
 
 ;  ---- PART TWO ----
 ; Out of curiosity, the debugger would also like to know the size of the loop: starting from a state that has already been seen, how many block redistribution cycles must be performed before that same state is seen again?
@@ -62,4 +62,4 @@
        (recur (inc count) (step coll) (assoc confs coll count)))))
 
 (find-config2 input)
-(find-config2 (slurp "src/advent_of_code/day6.in"))
+(find-config2 (slurp "src/advent_of_code/day06.in"))

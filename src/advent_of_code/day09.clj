@@ -6,7 +6,7 @@
 ;Your goal is to find the total score for all groups in your input. Each group is assigned a score which is one more than the score of the group that immediately contains it. (The outermost group gets a score of 1.)
 ;What is the total score for all groups in your input?
 
-(ns advent-of-code.day9
+(ns advent-of-code.day09
   (gen-class))
 
 (def input "<{!>}>")
@@ -45,7 +45,7 @@
     (count-groups)))
 
 (parse input)
-(parse (slurp "src/advent_of_code/day9.in"))
+(parse (slurp "src/advent_of_code/advent-of-code.day09.in"))
 
 ; ---- PART TWO ----
 ;Now, you're ready to remove the garbage.
@@ -65,4 +65,4 @@
     (count-garbage)))
 
 (parse2 input)
-(parse2 (slurp "src/advent_of_code/day9.in"))
+(parse2 (slurp "src/advent_of_code/advent-of-code.day09.in"))

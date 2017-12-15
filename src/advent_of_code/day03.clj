@@ -40,7 +40,7 @@
 ; i mod max < step -> max - i
 ; i mod max > step -> step + (i mod step)
 
-(ns advent-of-code.day3
+(ns advent-of-code.day03
   (:gen-class))
 
 (defn calculate-distance [i step max]

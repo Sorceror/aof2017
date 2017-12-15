@@ -29,7 +29,7 @@
     (filter #(= true %))
     (count)))
 
-(count-valid (slurp "src/advent_of_code/day4.in") valid-passphrase?)
+(count-valid (slurp "src/advent_of_code/day04.in") valid-passphrase?)
 
 ; --- PART TWO ---
 ; For added security, yet another system policy has been put in place. Now, a valid passphrase must contain no two words that are anagrams of each other - that is, a passphrase is invalid if any word's letters can be rearranged to form any other word in the passphrase.
@@ -50,4 +50,4 @@
     (map #(frequencies (vec %)) v)
     (= (count v) (count (distinct v)))))
 
-(count-valid (slurp "src/advent_of_code/day4.in") valid-passphrase2?)
+(count-valid (slurp "src/advent_of_code/day04.in") valid-passphrase2?)
