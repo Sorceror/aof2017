@@ -20,3 +20,8 @@
     (map #(to-digits %))
     (flatten)
     (vec)))
+
+(defn to-binary-string [val size]
+  (as-> (Integer/toBinaryString val) v
+        (format (str "%1$" size "s") v)
+        (clojure.string/replace v " " "0")))
