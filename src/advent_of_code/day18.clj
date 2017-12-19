@@ -109,18 +109,8 @@
 ;As you congratulate yourself for a job well done, you notice that the documentation has been on the back of the tablet this entire time. While you actually got most of the instructions correct, there are a few key differences. This assembly code isn't about sound at all - it's meant to be run twice at the same time.
 ;Each running copy of the program has its own set of registers and follows the code independently - in fact, the programs don't even necessarily run at the same speed. To coordinate, they use the send (snd) and receive (rcv) instructions:
 ;snd X sends the value of X to the other program. These values wait in a queue until that program is ready to receive them. Each program has its own message queue, so a program can never receive a message it sent.
-(defn reg-snd2 [target programID queues register]
-  (assoc queues programID (conj (get queues programID) (value-of target register))))
 ;rcv X receives the next value and stores it in register X. If no values are in the queue, the program waits for a value to be sent to it. Programs do not continue to the next instruction until they have received a value. Values are received in the order they are sent.
-(defn reg-rcv2 [target programID queues register])
-
 ;Each program also has its own program ID (one 0 and the other 1); the register p should begin with this value.
-(defn create-registers []
-  [(-> (create-register)
-       (assoc (position \p) 0))
-   (-> (create-register)
-       (assoc (position \p) 1))])
-;
 ;For example:
 ;
 ;snd 1
@@ -134,18 +124,39 @@
 ;Finally, both programs try to rcv a fourth time, but no data is waiting for either of them, and they reach a deadlock. When this happens, both programs terminate.
 ;It should be noted that it would be equally valid for the programs to run at different speeds; for example, program 0 might have sent all three values and then stopped at the first rcv before program 1 executed even its first instruction.
 ;Once both of your programs have terminated (regardless of what caused them to do so), how many times did program 1 send a value?
-(defn do-instruction [programID ins-seq pos registers queues]
-  (let [cmd-str (nth ins-seq pos)
+
+(defn single-step [instructions process queues]
+  (let [cmd-str (nth instructions (get process :position))
         command (nth cmd-str 0)
         target (position (.charAt ^String (nth cmd-str 1) 0))
+        registers (get process :registers)
         value (value-of (nth cmd-str 2) registers)
-        new-pos (inc pos)]
+        new-pos (inc (get process :position))
+        read-q (get queues :read)
+        write-q (get queues :write)]
     (cond
-      (= command "snd") [new-pos registers (assoc queues programID (conj (get queues programID) (value-of target registers)))]
-      (= command "set") [new-pos (reg-set target value registers) queues]
-      (= command "add") [new-pos (reg-add target value registers) queues]
-      (= command "mul") [new-pos (reg-mul target value registers) queues]
-      (= command "mod") [new-pos (reg-mod target value registers) queues]
-      (= command "rcv") [new-pos (reg-rcv target last-sound registers) queues]
-      (= command "jgz") [(+ pos (reg-jgz target value registers)) last-sound registers]
-      :else (println ins-seq "not supported!"))))
+      (= command "set") ([(merge process {:position new-pos :registers (reg-set target value registers)}) queues])
+      (= command "add") ([(merge process {:position new-pos :registers (reg-add target value registers)}) queues])
+      (= command "mul") ([(merge process {:position new-pos :registers (reg-mul target value registers)}) queues])
+      (= command "mod") ([(merge process {:position new-pos :registers (reg-mod target value registers)}) queues])
+      (= command "jgz") ([(merge process {:position (+ (get process :position) (reg-jgz target value registers))}) queues])
+      (= command "snd") ([(merge process {:position new-pos}) (merge queues {:write (concat write-q (list (get registers (value-of target registers))))})])
+      (= command "rcv") (if (empty? read-q)
+                            ([(merge process {:state :waiting}) queues])
+                            ([(merge process {:state :running :position new-pos :registers (reg-set (value-of target registers) (first read-q) registers)})
+                              (merge queues {:read (drop 1 read-q)})])))))
+
+(defn last-instruction? [instruction process]
+  (>= (get process :position) (count instruction)))
+
+(defn deadlock? [process r-queue]
+  (and (= (get process :state) :waiting) (empty? r-queue)))
+
+(defn process-instruction [instructions processes queues]
+  (let [[p1 q1] (single-step instructions (get processes 1) {:read (first queues) :write (second queues)})
+        [p2 q2] (single-step instructions (get processes 2) {:write (first queues) :read (second queues)})]
+    [{1 p1 2 p2} (list (concat (first q1) (first q2)) (concat (second q1) (second q2)))]))
+       ;(if (or (last-instruction? instructions p1) (last-instruction? instructions p2) (and (deadlock? p1 (first new-queues)) (deadlock? p2 (second new-queues)))))
+
+(defn run-loop [instructions])
+
