@@ -84,7 +84,7 @@
 (defn parse-seq [input]
   (->>
       (to-lines input)
-      (map #(re-matches #"([a-z]{3})\s([a-z])(?>\s(-*\d+|[a-z]))*" %))
+      (map #(re-matches #"^([a-z]{3})\s(\d+|[a-z])(?>\s(-*\d+|[a-z]))*$" %))
       (filter some?)
       (map #(subvec % 1))))
 
@@ -128,23 +128,23 @@
 (defn single-step [instructions process queues]
   (let [cmd-str (nth instructions (get process :position))
         command (nth cmd-str 0)
-        target (position (.charAt ^String (nth cmd-str 1) 0))
+        target-str (nth cmd-str 1)
+        target (if (is-num? target-str) (Integer/parseInt target-str) (position (.charAt ^String target-str 0)))
         registers (get process :registers)
         value (value-of (nth cmd-str 2) registers)
         new-pos (inc (get process :position))
         read-q (get queues :read)
         write-q (get queues :write)]
     (cond
-      (= command "set") ([(merge process {:position new-pos :registers (reg-set target value registers)}) queues])
-      (= command "add") ([(merge process {:position new-pos :registers (reg-add target value registers)}) queues])
-      (= command "mul") ([(merge process {:position new-pos :registers (reg-mul target value registers)}) queues])
-      (= command "mod") ([(merge process {:position new-pos :registers (reg-mod target value registers)}) queues])
-      (= command "jgz") ([(merge process {:position (+ (get process :position) (reg-jgz target value registers))}) queues])
-      (= command "snd") ([(merge process {:position new-pos}) (merge queues {:write (concat write-q (list (get registers (value-of target registers))))})])
+      (= command "set") (vector (merge process {:position new-pos :registers (reg-set target value registers)}) queues)
+      (= command "add") (vector (merge process {:position new-pos :registers (reg-add target value registers)}) queues)
+      (= command "mul") (vector (merge process {:position new-pos :registers (reg-mul target value registers)}) queues)
+      (= command "mod") (vector (merge process {:position new-pos :registers (reg-mod target value registers)}) queues)
+      (= command "jgz") (vector (merge process {:position (+ (get process :position) (reg-jgz target value registers))}) queues)
+      (= command "snd") (vector (merge process {:position new-pos :snd-count (inc (get process :snd-count))}) (merge queues {:write (concat write-q (list (get registers (value-of target registers))))}))
       (= command "rcv") (if (empty? read-q)
-                            ([(merge process {:state :waiting}) queues])
-                            ([(merge process {:state :running :position new-pos :registers (reg-set (value-of target registers) (first read-q) registers)})
-                              (merge queues {:read (drop 1 read-q)})])))))
+                            [(merge process {:state :waiting}) queues]
+                            [(merge process {:state :running :position new-pos :registers (reg-set (value-of target registers) (first read-q) registers)}) (merge queues {:read (drop 1 read-q)})]))))
 
 (defn last-instruction? [instruction process]
   (>= (get process :position) (count instruction)))
@@ -153,10 +153,28 @@
   (and (= (get process :state) :waiting) (empty? r-queue)))
 
 (defn process-instruction [instructions processes queues]
-  (let [[p1 q1] (single-step instructions (get processes 1) {:read (first queues) :write (second queues)})
-        [p2 q2] (single-step instructions (get processes 2) {:write (first queues) :read (second queues)})]
-    [{1 p1 2 p2} (list (concat (first q1) (first q2)) (concat (second q1) (second q2)))]))
-       ;(if (or (last-instruction? instructions p1) (last-instruction? instructions p2) (and (deadlock? p1 (first new-queues)) (deadlock? p2 (second new-queues)))))
+  (let [[p1 q1] (single-step instructions (get processes 1) {:read (first queues) :write '()})
+        [p2 q2] (single-step instructions (get processes 2) {:write '() :read (second queues)})]
+    [{1 p1 2 p2} (list (concat (get q1 :read) (get q2 :write)) (concat (get q2 :read) (get q1 :write)))]))
 
-(defn run-loop [instructions])
+(defn create-process-data [process-id]
+  {:process-id process-id
+   :position 0
+   :registers (reg-set (position \p) process-id (create-register))
+   :state :running
+   :snd-count 0})
 
+(defn run-loop [instructions]
+  (loop [ps {1 (create-process-data 0) 2 (create-process-data 1)}
+         qs (list '() '())]
+        (if
+          (or
+            (last-instruction? instructions (get ps 1))
+            (last-instruction? instructions (get ps 2))
+            (and (deadlock? (get ps 1) (first qs)) (deadlock? (get ps 2) (second qs))))
+          (get (get ps 2) :snd-count)
+          (let [[new-ps new-qs] (process-instruction instructions ps qs)]
+               (recur new-ps new-qs)))))
+
+(run-loop (parse-seq (slurp "src/advent_of_code/day18.in")))
+;=> 7493
