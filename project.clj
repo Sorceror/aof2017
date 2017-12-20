@@ -5,7 +5,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [proto-repl "0.3.1"]
-                 [org.clojure/tools.trace "0.7.9"]]
+                 [org.clojure/tools.trace "0.7.9"]
+                 [org.clojure/math.numeric-tower "0.0.4"]]
   :main ^:skip-aot advent-of-code.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}
