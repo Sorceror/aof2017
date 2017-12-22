@@ -100,6 +100,7 @@
 (defn is-infected? [pos grid]
   (->> grid
        (filter #(= (first %) pos))
+       (filter #(= (second %) \#))
        (first)
        (some?)))
 
@@ -117,10 +118,209 @@
     (= direction :down) :right
     (= direction :right) :up))
 
-(defn clean-node [pos grid])
+(defn clean-node [pos grid]
+  (filter #(not= (first %) pos) grid))
   
+(defn infect-node [pos grid]
+  (conj grid [pos \#]))
+
+(defn move-virus [pos direction]
+  (cond
+    (= direction :up) (mapv + pos [0 -1])
+    (= direction :down) (mapv + pos [0 1])
+    (= direction :right) (mapv + pos [1 0])
+    (= direction :left) (mapv + pos [-1 0])))
 
 (defn step [virus grid]
   (let [infected? (is-infected? (first virus) grid)
         new-dir (if infected? (turn-right (second virus)) (turn-left (second virus)))
-        grid (if infected? (clean-node (first virus) grid) (infect-node (first virus) grid))]))
+        grid (if infected? (clean-node (first virus) grid) (infect-node (first virus) grid))]
+       [[(move-virus (first virus) new-dir) new-dir] grid (not infected?)]))
+
+(defn compute-bursts [step-count virus grid]
+  (loop [c 0
+         bc 0
+         v virus
+         g grid]
+    (if (= c step-count)
+        bc
+        (let [[nv ng b?] (step v g)]
+             (recur (inc c) (if b? (inc bc) bc) nv ng)))))
+
+(compute-bursts 10000 test-virus (parse-grid test-input))
+; => 5587
+
+(def input
+  "#.....##.####.#.#########
+   .###..#..#..####.##....#.
+   ..#########...###...####.
+   .##.#.##..#.#..#.#....###
+   ...##....###..#.#..#.###.
+   ###..#...######.####.#.#.
+   #..###..###..###.###.##..
+   .#.#.###.#.#...####..#...
+   ##........##.####..##...#
+   .#.##..#.#....##.##.##..#
+   ###......#..##.####.###.#
+   ....#..###..#######.#...#
+   #####.....#.##.#..#..####
+   .#.###.#.###..##.#..####.
+   ..#..##.###...#######....
+   .#.##.#.#.#.#...###.#.#..
+   ##.###.#.#.###.#......#..
+   ###..##.#...#....#..####.
+   .#.#.....#..#....##..#..#
+   #####.#.##..#...##..#....
+   ##..#.#.#.####.#.##...##.
+   ..#..#.#.####...#........
+   ###.###.##.#..#.##.....#.
+   .##..##.##...#..#..#.#..#
+   #...####.#.##...#..#.#.##")
+
+(def virus [[12 12] :up])
+
+(compute-bursts 10000 virus (parse-grid input))
+; => 5450
+
+;--- Part Two ---
+;As you go to remove the virus from the infected nodes, it evolves to resist your attempt.
+;
+;Now, before it infects a clean node, it will weaken it to disable your defenses. If it encounters an infected node, it will instead flag the node to be cleaned in the future. So:
+;
+;Clean nodes become weakened.
+;Weakened nodes become infected.
+;Infected nodes become flagged.
+;Flagged nodes become clean.
+;Every node is always in exactly one of the above states.
+;
+;The virus carrier still functions in a similar way, but now uses the following logic during its bursts of action:
+;
+;Decide which way to turn based on the current node:
+;If it is clean, it turns left.
+;If it is weakened, it does not turn, and will continue moving in the same direction.
+;If it is infected, it turns right.
+;If it is flagged, it reverses direction, and will go back the way it came.
+;Modify the state of the current node, as described above.
+;The virus carrier moves forward one node in the direction it is facing.
+;Start with the same map (still using . for clean and # for infected) and still with the virus carrier starting in the middle and facing up.
+;
+;Using the same initial state as the previous example, and drawing weakened as W and flagged as F, the middle of the infinite grid looks like this, with the virus carrier's position again marked with [ ]:
+;
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . # . . .
+; . . . #[.]. . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+;This is the same as before, since no initial nodes are weakened or flagged. The virus carrier is on a clean node, so it still turns left, instead weakens the node, and moves left:
+;
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . # . . .
+; . . .[#]W . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+;The virus carrier is on an infected node, so it still turns right, instead flags the node, and moves up:
+;
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . .[.]. # . . .
+; . . . F W . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+;This process repeats three more times, ending on the previously-flagged node and facing right:
+;
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . W W . # . . .
+; . . W[F]W . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+;Finding a flagged node, it reverses direction and cleans the node:
+;
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . W W . # . . .
+; . .[W]. W . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+;The weakened node becomes infected, and it continues in the same direction:
+;
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . W W . # . . .
+; .[.]# . W . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+; . . . . . . . . .
+;Of the first 100 bursts, 26 will result in infection. Unfortunately, another feature of this evolved virus is speed; of the first 10000000 bursts, 2511944 will result in infection.
+;Given your actual map, after 10000000 bursts of activity, how many bursts cause a node to become infected? (Do not count nodes that begin infected.)
+
+(defn set-node [pos state grid]
+  (->> grid
+       (filter #(not= pos (first %)))
+       (cons [pos state])))
+
+(defn get-node [pos grid]
+  (let [node (->> grid
+                  (filter #(= (first %) pos))
+                  (first))]
+    (if (some? node)
+        (second node)
+        \.)))
+
+(defn step-grid [virus grid]
+  (let [position (first virus)
+        node (get-node position grid)]
+    (cond
+      (= node \.) [(set-node position \W grid) false]
+      (= node \W) [(set-node position \# grid) true]
+      (= node \#) [(set-node position \F grid) false]
+      (= node \F) [(set-node position \. grid) false])))
+
+(defn reverse-direction [d]
+  (cond
+    (= d :left) :right
+    (= d :right) :left
+    (= d :up) :down
+    (= d :down) :up))
+
+(defn step-virus [virus grid]
+  (let [position (first virus)
+        node (get-node position grid)
+        direction (cond
+                    (= node \.) (turn-left (second virus))
+                    (= node \W) (second virus)
+                    (= node \#) (turn-right (second virus))
+                    (= node \F) (reverse-direction (second virus)))]
+    [(move-virus position direction) direction]))
+
+(defn step [virus grid]
+  (let [nv (step-virus virus grid)
+        [ng infected?] (step-grid virus grid)]
+       [nv ng infected?]))
+
+(defn compute-bursts-to-infect [step-count virus grid]
+  (loop [c 0
+         ic 0
+         v virus
+         g grid]
+    (if (= c step-count)
+        ic
+        (let [[nv ng i?] (step v g)
+              _ (if (= 0 (mod c 10000)) (println c))]
+             (recur (inc c) (if i? (inc ic) ic) nv ng)))))
+
+(compute-bursts-to-infect 100 test-virus (parse-grid test-input))
+;=> 26
