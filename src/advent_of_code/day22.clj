@@ -95,14 +95,14 @@
        (to-lines)
        (map-indexed (fn [y item] (map-indexed (fn [x c] [[x y] c]) item)))
        (reduce concat)
-       (filter #(= \# (second %)))))
+       (filter #(= \# (second %)))
+       (reduce
+         (fn [m n]
+           (assoc m (first n) (second n)))
+         {})))
 
 (defn is-infected? [pos grid]
-  (->> grid
-       (filter #(= (first %) pos))
-       (filter #(= (second %) \#))
-       (first)
-       (some?)))
+  (contains? grid pos))
 
 (defn turn-right [direction]
   (cond
@@ -119,10 +119,10 @@
     (= direction :right) :up))
 
 (defn clean-node [pos grid]
-  (filter #(not= (first %) pos) grid))
-  
+  (dissoc grid pos))
+
 (defn infect-node [pos grid]
-  (conj grid [pos \#]))
+  (assoc grid pos \#))
 
 (defn move-virus [pos direction]
   (cond
@@ -268,17 +268,12 @@
 ;Given your actual map, after 10000000 bursts of activity, how many bursts cause a node to become infected? (Do not count nodes that begin infected.)
 
 (defn set-node [pos state grid]
-  (->> grid
-       (filter #(not= pos (first %)))
-       (cons [pos state])))
+  (assoc grid pos state))
 
 (defn get-node [pos grid]
-  (let [node (->> grid
-                  (filter #(= (first %) pos))
-                  (first))]
-    (if (some? node)
-        (second node)
-        \.)))
+  (if (contains? grid pos)
+      (get grid pos)
+      \.))
 
 (defn step-grid [virus grid]
   (let [position (first virus)
@@ -306,7 +301,7 @@
                     (= node \F) (reverse-direction (second virus)))]
     [(move-virus position direction) direction]))
 
-(defn step [virus grid]
+(defn step2 [virus grid]
   (let [nv (step-virus virus grid)
         [ng infected?] (step-grid virus grid)]
        [nv ng infected?]))
@@ -318,9 +313,12 @@
          g grid]
     (if (= c step-count)
         ic
-        (let [[nv ng i?] (step v g)
-              _ (if (= 0 (mod c 10000)) (println c))]
+        (let [[nv ng i?] (step2 v g)]
              (recur (inc c) (if i? (inc ic) ic) nv ng)))))
 
 (compute-bursts-to-infect 100 test-virus (parse-grid test-input))
 ;=> 26
+(compute-bursts-to-infect 10000000 test-virus (parse-grid test-input))
+;=> 2511944
+(compute-bursts-to-infect 10000000 virus (parse-grid input))
+;=> 2511957
