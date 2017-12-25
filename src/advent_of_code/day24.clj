@@ -49,3 +49,23 @@
 ;=> 31
 (backtracking-max 0 (parse-input (slurp "src/advent_of_code/day24.in")) 0)
 ;=> 1859
+
+(defn backtracking-max-len [p ports acc-max acc-len]
+  (let [connections (get-connections p ports)]
+    (if (empty? connections)
+      [acc-max acc-len]
+      (reduce
+        (fn [[max len] c]
+          (let [next-port (or (first (disj c p)) p)
+                [max-val len-val] (backtracking-max-len next-port (disj ports c) (+ acc-max p next-port) (inc acc-len))]
+            (if (> len-val len)
+                [max-val len-val]
+                (if (and (= len-val len) (> max-val max))
+                  [max-val len-val]
+                  [max len]))))
+        [acc-max acc-len] connections))))
+
+(backtracking-max-len 0 (parse-input test-input) 0 0)
+; => [19 4]
+(backtracking-max-len 0 (parse-input (slurp "src/advent_of_code/day24.in")) 0 0)
+;=> [1799 35]
